@@ -20,7 +20,7 @@ log = get_logger(__name__)
 
 
 def _client() -> QdrantClient:
-    return QdrantClient(url=get_settings().qdrant_url, prefer_grpc=False, timeout=30.0)
+    return QdrantClient(url=get_settings().qdrant_url, prefer_grpc=False, timeout=30)
 
 
 def _point_id(chunk_id: str) -> str:
@@ -101,14 +101,21 @@ def search(
 ) -> list[DenseHit]:
     client = _client()
     settings = get_settings()
-    res = client.search(
+    # `query_points` is the supported API in qdrant-client >=1.10. The older
+    # `client.search(...)` method was removed.
+    res = client.query_points(
         collection_name=settings.qdrant_collection,
-        query_vector=query_vector.tolist(),
+        query=query_vector.tolist(),
         limit=top_k,
         query_filter=qdrant_filter,
         with_payload=True,
     )
     return [
-        DenseHit(chunk_id=p.payload["chunk_id"], score=float(p.score), payload=dict(p.payload))
-        for p in res
+        DenseHit(
+            chunk_id=p.payload["chunk_id"],
+            score=float(p.score),
+            payload=dict(p.payload),
+        )
+        for p in res.points
+        if p.payload is not None
     ]

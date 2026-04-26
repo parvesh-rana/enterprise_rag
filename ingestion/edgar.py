@@ -46,10 +46,10 @@ class FilingRef:
     ticker: str
     company_name: str
     cik: str
-    accession: str          # with dashes, e.g. "0000320193-24-000123"
-    primary_document: str   # filename of the main 10-K HTML
+    accession: str  # with dashes, e.g. "0000320193-24-000123"
+    primary_document: str  # filename of the main 10-K HTML
     fiscal_year: int
-    filing_date: str        # ISO date
+    filing_date: str  # ISO date
 
     @property
     def primary_url(self) -> str:

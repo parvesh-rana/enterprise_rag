@@ -9,9 +9,28 @@ from pydantic import BaseModel, Field
 # 10-K Items we extract. Item 7A and 9A include alphabetic suffixes; the parser
 # normalizes to these canonical strings.
 ItemKey = Literal[
-    "1", "1A", "1B", "1C", "2", "3", "4",
-    "5", "6", "7", "7A", "8", "9", "9A", "9B",
-    "10", "11", "12", "13", "14", "15", "16",
+    "1",
+    "1A",
+    "1B",
+    "1C",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "7A",
+    "8",
+    "9",
+    "9A",
+    "9B",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
     "UNKNOWN",
 ]
 
@@ -19,13 +38,13 @@ ItemKey = Literal[
 class FilingDoc(BaseModel):
     """A parsed 10-K filing: full text plus the Item-level section spans."""
 
-    company: str           # canonical ticker (e.g. "AAPL")
-    company_name: str      # display name (e.g. "Apple Inc.")
-    year: int              # fiscal year of the filing
-    cik: str               # SEC CIK, zero-padded
-    accession: str         # SEC accession number
-    source_url: str        # canonical URL on EDGAR
-    text: str              # cleaned plain text of the entire filing
+    company: str  # canonical ticker (e.g. "AAPL")
+    company_name: str  # display name (e.g. "Apple Inc.")
+    year: int  # fiscal year of the filing
+    cik: str  # SEC CIK, zero-padded
+    accession: str  # SEC accession number
+    source_url: str  # canonical URL on EDGAR
+    text: str  # cleaned plain text of the entire filing
     sections: list[Section]
 
 
@@ -33,9 +52,9 @@ class Section(BaseModel):
     """A contiguous span of `FilingDoc.text` belonging to one 10-K Item."""
 
     item: ItemKey
-    title: str             # original heading, e.g. "Item 1A. Risk Factors"
-    start: int             # inclusive char offset into FilingDoc.text
-    end: int               # exclusive char offset into FilingDoc.text
+    title: str  # original heading, e.g. "Item 1A. Risk Factors"
+    start: int  # inclusive char offset into FilingDoc.text
+    end: int  # exclusive char offset into FilingDoc.text
 
 
 class Chunk(BaseModel):

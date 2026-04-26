@@ -20,9 +20,7 @@ from core.logging import get_logger
 log = get_logger(__name__)
 
 # Per-model query instruction. Documents do NOT get a prefix.
-_BGE_QUERY_INSTRUCTION = (
-    "Represent this sentence for searching relevant passages: "
-)
+_BGE_QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "
 
 
 @lru_cache(maxsize=1)
@@ -56,7 +54,8 @@ def embed_documents(texts: Iterable[str], batch_size: int = 32) -> np.ndarray:
         normalize_embeddings=True,
         convert_to_numpy=True,
     )
-    return arr.astype(np.float32, copy=False)
+    out: np.ndarray = arr.astype(np.float32, copy=False)
+    return out
 
 
 def embed_query(query: str) -> np.ndarray:
@@ -68,4 +67,5 @@ def embed_query(query: str) -> np.ndarray:
         normalize_embeddings=True,
         convert_to_numpy=True,
     )
-    return arr[0].astype(np.float32, copy=False)
+    out: np.ndarray = arr[0].astype(np.float32, copy=False)
+    return out

@@ -18,27 +18,36 @@ from core.types import FilingDoc, ItemKey, Section
 
 # Tags to drop wholesale before extracting text.
 _DROP_TAGS: Final[tuple[str, ...]] = (
-    "script", "style", "noscript", "head", "meta", "link",
-    "iframe", "form", "input", "button", "svg",
+    "script",
+    "style",
+    "noscript",
+    "head",
+    "meta",
+    "link",
+    "iframe",
+    "form",
+    "input",
+    "button",
+    "svg",
 )
 
 # Inline-XBRL wrappers carry no useful text once their inner text is preserved.
 # We don't drop them; we just unwrap by reading their text content.
 
-_WS_RE = re.compile(r"[ \t   ]+")
+# Match horizontal whitespace plus the unicode space variants 10-Ks love:
+# NBSP (U+00A0), FIGURE SPACE (U+2007), NARROW NBSP (U+202F).
+_WS_RE = re.compile("[ \t\u00a0\u2007\u202f]+")
 _BLANK_LINES_RE = re.compile(r"\n{3,}")
 
 # Match "Item 1A.", "ITEM 1A.", "Item 7A —", optionally followed by a title on
 # the same line. We capture the item key and the full heading line for `title`.
 _ITEM_HEADING_RE = re.compile(
-    r"""
-    ^[ \t]*                                  # optional indent
-    item[ \t]+                               # 'Item'
-    (?P<key>\d{1,2}[A-C]?)                   # 1, 1A, 7A, 9B, 1C ...
-    [ \t]*[.—–:\-]?[ \t]*          # separator (., :, em/en dash, hyphen)
-    (?P<title>[^\n]{0,200})                  # rest of the heading line
-    """,
-    re.IGNORECASE | re.MULTILINE | re.VERBOSE,
+    "^[ \t]*"
+    "item[ \t]+"
+    r"(?P<key>\d{1,2}[A-C]?)"
+    "[ \t]*[.\u2014\u2013:-]?[ \t]*"
+    r"(?P<title>[^\n]{0,200})",
+    re.IGNORECASE | re.MULTILINE,
 )
 
 _VALID_ITEM_KEYS: Final[frozenset[str]] = frozenset(get_args(ItemKey)) - {"UNKNOWN"}

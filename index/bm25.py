@@ -22,11 +22,54 @@ PayloadPredicate = Callable[[dict[str, Any]], bool]
 # English stopword list small enough to inline. Removing them noticeably
 # improves BM25 quality on financial prose where "the/of/and" dominate.
 _STOPWORDS = frozenset(
-    """
-    a an and are as at be but by for from has have he her his i in is it its
-    of on or our she that the their them they this those to was we were what
-    when where which who will with you your
-    """.split()
+    [
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "but",
+        "by",
+        "for",
+        "from",
+        "has",
+        "have",
+        "he",
+        "her",
+        "his",
+        "i",
+        "in",
+        "is",
+        "it",
+        "its",
+        "of",
+        "on",
+        "or",
+        "our",
+        "she",
+        "that",
+        "the",
+        "their",
+        "them",
+        "they",
+        "this",
+        "those",
+        "to",
+        "was",
+        "we",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "will",
+        "with",
+        "you",
+        "your",
+    ]
 )
 
 _TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9'\-\.]*")

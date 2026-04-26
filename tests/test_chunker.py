@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import pytest
 
 from core.types import Chunk, FilingDoc, Section
 from ingestion.chunker import ChunkerConfig, chunk_filing
-from ingestion.parser import find_sections, html_to_text
-
+from ingestion.parser import html_to_text
 
 # ---------- parser ----------
+
 
 def test_html_to_text_strips_script_and_style(tiny_filing_html: str) -> None:
     text = html_to_text(tiny_filing_html)
@@ -22,7 +24,7 @@ def test_html_to_text_normalizes_nbsp(tiny_filing_html: str) -> None:
     text = html_to_text(tiny_filing_html)
     # NBSP between "December" and "31" should be normalized to a regular space.
     assert "December 31, 2024" in text
-    assert " " not in text
+    assert "\u00a0" not in text
 
 
 def test_find_sections_dedupes_toc_entries(tiny_filing_doc: FilingDoc) -> None:
@@ -36,15 +38,18 @@ def test_find_sections_dedupes_toc_entries(tiny_filing_doc: FilingDoc) -> None:
 def test_sections_are_ordered_and_contiguous(tiny_filing_doc: FilingDoc) -> None:
     secs = tiny_filing_doc.sections
     assert secs == sorted(secs, key=lambda s: s.start)
-    for a, b in zip(secs, secs[1:], strict=True):
+    for a, b in pairwise(secs):
         assert a.end == b.start, "sections must tile the text without gaps or overlaps"
     assert secs[-1].end == len(tiny_filing_doc.text)
 
 
 # ---------- chunker ----------
 
+
 def test_chunks_respect_section_boundaries(tiny_filing_doc: FilingDoc) -> None:
-    chunks = chunk_filing(tiny_filing_doc, ChunkerConfig(max_tokens=80, min_tokens=10, overlap_tokens=10))
+    chunks = chunk_filing(
+        tiny_filing_doc, ChunkerConfig(max_tokens=80, min_tokens=10, overlap_tokens=10)
+    )
     by_item: dict[str, list[Chunk]] = {}
     for c in chunks:
         by_item.setdefault(c.item, []).append(c)
@@ -107,7 +112,9 @@ def test_oversized_paragraph_is_hard_wrapped() -> None:
 
 
 def test_overlap_does_not_cross_section_boundaries(tiny_filing_doc: FilingDoc) -> None:
-    chunks = chunk_filing(tiny_filing_doc, ChunkerConfig(max_tokens=60, min_tokens=10, overlap_tokens=20))
+    chunks = chunk_filing(
+        tiny_filing_doc, ChunkerConfig(max_tokens=60, min_tokens=10, overlap_tokens=20)
+    )
     # The first chunk of each section must not begin with text drawn from a
     # different section. We approximate by checking that the first chunk's
     # text appears verbatim inside its own section span.

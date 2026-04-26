@@ -71,9 +71,7 @@ async def _ingest_from_edgar(tickers: list[str]) -> int:
 def _ingest_from_sample() -> int:
     """Fallback: parse any HTML files in data/sample/. Metadata is best-effort."""
     settings = get_settings()
-    htmls = sorted(settings.sample_dir.glob("*.html")) + sorted(
-        settings.sample_dir.glob("*.htm")
-    )
+    htmls = sorted(settings.sample_dir.glob("*.html")) + sorted(settings.sample_dir.glob("*.htm"))
     if not htmls:
         log.warning("ingest.no_sample", dir=str(settings.sample_dir))
         return 0

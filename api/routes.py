@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -111,7 +112,7 @@ def health(
         qdrant_ok = False
 
     bm25_ok = bm25 is not None
-    overall = "ok" if (qdrant_ok and bm25_ok) else "degraded"
+    overall: Literal["ok", "degraded"] = "ok" if (qdrant_ok and bm25_ok) else "degraded"
     return HealthResponse(
         status=overall,
         qdrant=qdrant_ok,
@@ -122,7 +123,9 @@ def health(
 
 
 @router.get("/sources/{chunk_id}", response_model=SourceResponse)
-def source(chunk_id: str, request: Request, bm25: BM25Index | None = Depends(get_bm25)) -> SourceResponse:
+def source(
+    chunk_id: str, request: Request, bm25: BM25Index | None = Depends(get_bm25)
+) -> SourceResponse:
     """Return the full text of a chunk by id. BM25 carries the full payload
     so we read from it rather than going back to Qdrant."""
     if bm25 is None:

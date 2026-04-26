@@ -45,9 +45,7 @@ class QAExample(BaseModel):
 
 def load_qa_set(path: Path) -> list[QAExample]:
     if not path.exists():
-        raise FileNotFoundError(
-            f"QA set not found at {path}. See evaluation/qa_set.jsonl."
-        )
+        raise FileNotFoundError(f"QA set not found at {path}. See evaluation/qa_set.jsonl.")
     out: list[QAExample] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()

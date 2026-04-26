@@ -46,7 +46,7 @@ def retrieve(
 
     fused = reciprocal_rank_fusion([dense_hits, sparse_hits], top_k=rerank_k)
 
-    if not use_reranker:
+    if not use_reranker:  # noqa: SIM108 — explicit branches read clearer than a ternary here
         result = fused[:final_k]
     else:
         result = rerank(query, fused, top_k=final_k)

@@ -20,9 +20,7 @@ class RetrievedChunk:
 
 def dense_search(query: str, *, top_k: int, filt: RetrievalFilter) -> list[RetrievedChunk]:
     qvec = embed_query(query)
-    hits: list[DenseHit] = search(
-        query_vector=qvec, top_k=top_k, qdrant_filter=filt.to_qdrant()
-    )
+    hits: list[DenseHit] = search(query_vector=qvec, top_k=top_k, qdrant_filter=filt.to_qdrant())
     return [
         RetrievedChunk(chunk_id=h.chunk_id, score=h.score, payload=h.payload, source="dense")
         for h in hits

@@ -31,6 +31,7 @@ def _hit(chunk_id: str, text: str = "lorem ipsum", **payload: Any) -> RetrievedC
 
 # ---------- build_messages ----------
 
+
 def test_build_messages_emits_system_and_user_pair() -> None:
     msgs = build_messages("What was revenue?", [_hit("c1", "Revenue was $42M.")])
     assert [m.role for m in msgs] == ["system", "user"]
@@ -57,11 +58,14 @@ def test_user_message_handles_empty_chunks() -> None:
 
 def test_system_prompt_contains_citation_contract() -> None:
     # The exact wording matters; the parser depends on the bracket format.
-    assert "square brackets" in SYSTEM_PROMPT
+    # Tolerate line wrapping by checking each token rather than the joined phrase.
+    assert "square" in SYSTEM_PROMPT
+    assert "brackets" in SYSTEM_PROMPT
     assert "I don't have enough information" in SYSTEM_PROMPT
 
 
 # ---------- parse_citations ----------
+
 
 def test_parse_citations_extracts_single_id() -> None:
     text = "Revenue grew 12% YoY [AAPL-2024-7-0003]."
@@ -94,12 +98,14 @@ def test_parse_citations_ignores_brackets_without_known_ids() -> None:
 
 def test_parse_citations_tolerates_whitespace_inside_brackets() -> None:
     text = "Fact [ AAPL-2024-7-0001 ,  AAPL-2024-7-0002 ]."
-    assert parse_citations(
-        text, allowed_ids={"AAPL-2024-7-0001", "AAPL-2024-7-0002"}
-    ) == ["AAPL-2024-7-0001", "AAPL-2024-7-0002"]
+    assert parse_citations(text, allowed_ids={"AAPL-2024-7-0001", "AAPL-2024-7-0002"}) == [
+        "AAPL-2024-7-0001",
+        "AAPL-2024-7-0002",
+    ]
 
 
 # ---------- answer() with a fake LLM ----------
+
 
 class FakeLLM(LLMClient):
     def __init__(self, response_text: str) -> None:
@@ -128,12 +134,9 @@ def test_answer_orchestrates_and_attaches_validated_citations() -> None:
         _hit("AAPL-2024-7-0002", "R&D expense rose 8%."),
     ]
     fake = FakeLLM(
-        "Revenue grew to $42M [AAPL-2024-7-0001]. "
-        "R&D rose 8% [AAPL-2024-7-0002, FAKE-ID]."
+        "Revenue grew to $42M [AAPL-2024-7-0001]. " "R&D rose 8% [AAPL-2024-7-0002, FAKE-ID]."
     )
-    out: Answer = run_answer(
-        "What happened?", chunks, request_id="req-123", client=fake
-    )
+    out: Answer = run_answer("What happened?", chunks, request_id="req-123", client=fake)
     assert out.model == "fake-model"
     assert out.request_id == "req-123"
     assert [c.chunk_id for c in out.citations] == [

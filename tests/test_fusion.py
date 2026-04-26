@@ -12,10 +12,13 @@ from retrieval.fusion import reciprocal_rank_fusion
 
 
 def _hit(chunk_id: str, score: float = 0.0, source: str = "dense") -> RetrievedChunk:
-    return RetrievedChunk(chunk_id=chunk_id, score=score, payload={"chunk_id": chunk_id}, source=source)
+    return RetrievedChunk(
+        chunk_id=chunk_id, score=score, payload={"chunk_id": chunk_id}, source=source
+    )
 
 
 # ---------- RRF ----------
+
 
 def test_rrf_empty_inputs() -> None:
     assert reciprocal_rank_fusion([]) == []
@@ -64,8 +67,12 @@ def test_rrf_marks_results_as_hybrid() -> None:
 
 
 def test_rrf_keeps_payload_from_first_ranking_seen() -> None:
-    dense_hit = RetrievedChunk(chunk_id="a", score=0.0, payload={"text": "from dense"}, source="dense")
-    sparse_hit = RetrievedChunk(chunk_id="a", score=0.0, payload={"text": "from sparse"}, source="sparse")
+    dense_hit = RetrievedChunk(
+        chunk_id="a", score=0.0, payload={"text": "from dense"}, source="dense"
+    )
+    sparse_hit = RetrievedChunk(
+        chunk_id="a", score=0.0, payload={"text": "from sparse"}, source="sparse"
+    )
     fused = reciprocal_rank_fusion([[dense_hit], [sparse_hit]])
     assert fused[0].payload["text"] == "from dense"
 
@@ -77,12 +84,13 @@ def test_rrf_respects_k_constant() -> None:
     sparse = [_hit("a")]
     fused_small = reciprocal_rank_fusion([dense, sparse], k=10)
     fused_large = reciprocal_rank_fusion([dense, sparse], k=1000)
-    assert [h.chunk_id for h in fused_small][0] == "a"
-    assert [h.chunk_id for h in fused_large][0] == "a"
+    assert fused_small[0].chunk_id == "a"
+    assert fused_large[0].chunk_id == "a"
     assert fused_small[0].score > fused_large[0].score
 
 
 # ---------- filters ----------
+
 
 def test_empty_filter_is_noop() -> None:
     f = RetrievalFilter()

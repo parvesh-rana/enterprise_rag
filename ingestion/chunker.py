@@ -59,16 +59,12 @@ def _split_paragraphs(section_text: str, base_offset: int) -> list[tuple[str, in
         if start_in_section == -1:
             start_in_section = cursor
         end_in_section = start_in_section + len(piece)
-        out.append(
-            (piece.strip(), base_offset + start_in_section, base_offset + end_in_section)
-        )
+        out.append((piece.strip(), base_offset + start_in_section, base_offset + end_in_section))
         cursor = end_in_section
     return out
 
 
-def _hard_wrap(
-    paragraph: str, char_start: int, max_tokens: int
-) -> list[tuple[str, int, int]]:
+def _hard_wrap(paragraph: str, char_start: int, max_tokens: int) -> list[tuple[str, int, int]]:
     """Split an oversized paragraph into max_tokens-sized pieces.
 
     Tries sentence boundaries first; falls back to a token window so a single
@@ -212,9 +208,7 @@ def chunk_filing(doc: FilingDoc, cfg: ChunkerConfig | None = None) -> list[Chunk
 
     for section in sections:
         ordinal_start = sum(1 for c in out if c.item == section.item)
-        out.extend(
-            _chunk_section(doc=doc, section=section, cfg=cfg, ordinal_start=ordinal_start)
-        )
+        out.extend(_chunk_section(doc=doc, section=section, cfg=cfg, ordinal_start=ordinal_start))
     return out
 
 

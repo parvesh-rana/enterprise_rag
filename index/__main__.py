@@ -29,9 +29,7 @@ log = get_logger(__name__)
 def _load_chunks(chunks_dir: Path) -> list[Chunk]:
     files = sorted(chunks_dir.glob("*.jsonl"))
     if not files:
-        raise FileNotFoundError(
-            f"No chunk files in {chunks_dir}. Run `make ingest` first."
-        )
+        raise FileNotFoundError(f"No chunk files in {chunks_dir}. Run `make ingest` first.")
     chunks: list[Chunk] = []
     for f in files:
         with f.open("rb") as fh:
@@ -80,11 +78,15 @@ def main() -> None:
     bm25.save(bm25_path)
     log.info("index.bm25_saved", path=str(bm25_path), n=len(chunks))
 
-    print(json.dumps({
-        "chunks_indexed": len(chunks),
-        "bm25_path": str(bm25_path),
-        "qdrant_collection": settings.qdrant_collection,
-    }))
+    print(
+        json.dumps(
+            {
+                "chunks_indexed": len(chunks),
+                "bm25_path": str(bm25_path),
+                "qdrant_collection": settings.qdrant_collection,
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

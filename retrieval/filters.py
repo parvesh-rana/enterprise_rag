@@ -26,11 +26,11 @@ class RetrievalFilter(BaseModel):
     def to_qdrant(self) -> qm.Filter | None:
         if self.is_empty():
             return None
-        must: list[qm.FieldCondition] = []
+        # Qdrant's `must` accepts a wider union than FieldCondition; type via Any
+        # so we don't fight list invariance.
+        must: list[Any] = []
         if self.company is not None:
-            must.append(
-                qm.FieldCondition(key="company", match=qm.MatchValue(value=self.company))
-            )
+            must.append(qm.FieldCondition(key="company", match=qm.MatchValue(value=self.company)))
         if self.year is not None:
             must.append(qm.FieldCondition(key="year", match=qm.MatchValue(value=self.year)))
         if self.item is not None:
@@ -50,8 +50,6 @@ class RetrievalFilter(BaseModel):
                 return False
             if year is not None and p.get("year") != year:
                 return False
-            if item is not None and p.get("item") != item:
-                return False
-            return True
+            return not (item is not None and p.get("item") != item)
 
         return _pred

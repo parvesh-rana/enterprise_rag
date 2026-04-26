@@ -10,9 +10,7 @@ from retrieval.reranker import rerank
 
 
 def _hit(cid: str, text: str) -> RetrievedChunk:
-    return RetrievedChunk(
-        chunk_id=cid, score=0.0, payload={"text": text}, source="hybrid"
-    )
+    return RetrievedChunk(chunk_id=cid, score=0.0, payload={"text": text}, source="hybrid")
 
 
 def _fake_scorer_by_word(target_word: str) -> Callable[[str, list[tuple[str, str]]], list[float]]:
@@ -67,7 +65,7 @@ def test_rerank_preserves_payload() -> None:
 def test_rerank_score_replaces_rrf_score() -> None:
     cands = [_hit("a", "anvil anvil anvil")]
     out = rerank("anvil", cands, top_k=1, score_fn=_fake_scorer_by_word("anvil"))
-    assert out[0].score == 3.0   # from the fake scorer, not the input 0.0
+    assert out[0].score == 3.0  # from the fake scorer, not the input 0.0
 
 
 def test_rerank_raises_when_scorer_returns_wrong_length() -> None:

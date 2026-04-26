@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -45,6 +44,7 @@ def _ex(
 
 
 # ---------- is_hit / recall@k / mrr ----------
+
 
 def test_is_hit_matches_chunk_id() -> None:
     assert is_hit(_hit("a"), _ex(gold_ids=["a"])) is True
@@ -97,12 +97,13 @@ def test_aggregate_empty_returns_zeros() -> None:
 
 # ---------- dataset loader ----------
 
+
 def test_load_qa_set_skips_blank_and_comments(tmp_path: Path) -> None:
     p = tmp_path / "qa.jsonl"
     p.write_text(
         "\n# header comment\n"
         '{"id":"a","question":"Q?","kind":"factoid","gold_substrings":["x"]}\n'
-        '\n'
+        "\n"
         '{"id":"b","question":"Q?","kind":"unanswerable"}\n',
         encoding="utf-8",
     )
@@ -126,6 +127,7 @@ def test_shipped_qa_set_parses() -> None:
 
 
 # ---------- judge ----------
+
 
 class FakeJudgeLLM(LLMClient):
     def __init__(self, reply: str) -> None:

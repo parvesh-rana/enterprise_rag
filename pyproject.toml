@@ -65,10 +65,16 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF", "ANN", "ASYNC"]
-ignore = ["E501", "ANN101", "ANN102"]
+# E501: line length is governed by black.
+# ANN401: we deliberately use `Any` in a couple of lazy-load wrappers and in
+# structlog's **initial_values; the alternative (importing torch/sentence-
+# transformers at module scope) defeats the lazy load.
+ignore = ["E501", "ANN401"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN", "B"]
+# B008 fires on FastAPI's standard `param: T = Depends(provider)` idiom.
+"api/*" = ["B008"]
 
 [tool.black]
 line-length = 100

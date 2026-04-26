@@ -29,8 +29,8 @@ from index.bm25 import BM25Index
 from ingestion.chunker import ChunkerConfig, chunk_filing
 from retrieval.dense import RetrievedChunk
 
-
 # ---------- fakes & helpers ----------
+
 
 class StubLLM(LLMClient):
     """Echoes a fixed answer that cites whatever id appears first in the user prompt."""
@@ -70,6 +70,7 @@ def _stub_dense(_query: str, *, top_k: int, filt: Any) -> list[RetrievedChunk]:
 
 
 # ---------- fixtures ----------
+
 
 @pytest.fixture
 def app(monkeypatch: pytest.MonkeyPatch, tiny_filing_doc: FilingDoc) -> Iterator[FastAPI]:
@@ -112,6 +113,7 @@ def client(app: FastAPI) -> TestClient:
 
 
 # ---------- tests ----------
+
 
 def test_health_reports_bm25_loaded(client: TestClient) -> None:
     r = client.get("/health")

@@ -20,6 +20,7 @@ import json
 import time
 from pathlib import Path
 from statistics import mean
+from typing import Any
 
 from tqdm import tqdm
 
@@ -53,7 +54,7 @@ def _run_one(
     retrieved = retrieve(
         example.question,
         filt=filt,
-        final_top_k=pool_top_k,        # we want top-10 for Recall@10 measurement
+        final_top_k=pool_top_k,  # we want top-10 for Recall@10 measurement
         use_reranker=use_reranker,
     )
     retrieval_s = time.perf_counter() - t0
@@ -75,7 +76,7 @@ def _run_one(
     return retrieved, per, retrieval_s + gen_s, ans.text, ans.model
 
 
-def _write_csv(path: Path, rows: list[dict]) -> None:
+def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         path.write_text("", encoding="utf-8")
         return
@@ -88,7 +89,7 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
 def _write_markdown(
     path: Path,
     *,
-    settings_dump: dict,
+    settings_dump: dict[str, Any],
     n: int,
     scores: RetrievalScores,
     faithfulness: float | None,
@@ -161,7 +162,7 @@ def main() -> None:
 
     judge_client = None if args.no_judge else get_llm_client()
 
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     judge_scores: list[float] = []
     t_start = time.perf_counter()
 
@@ -217,7 +218,7 @@ def main() -> None:
         bucket["recall@5"] += r["recall@5"]
         bucket["recall@10"] += r["recall@10"]
         bucket["mrr"] += r["mrr"]
-    for k, agg in by_kind.items():
+    for agg in by_kind.values():
         n = agg["n"] or 1.0
         agg["recall@5"] /= n
         agg["recall@10"] /= n
@@ -245,14 +246,19 @@ def main() -> None:
         elapsed_s=elapsed,
     )
 
-    print(json.dumps({
-        "examples": len(rows),
-        "recall@5": scores.recall_at_5,
-        "recall@10": scores.recall_at_10,
-        "mrr": scores.mrr,
-        "faithfulness": faithfulness,
-        "report_dir": str(out_dir),
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "examples": len(rows),
+                "recall@5": scores.recall_at_5,
+                "recall@10": scores.recall_at_10,
+                "mrr": scores.mrr,
+                "faithfulness": faithfulness,
+                "report_dir": str(out_dir),
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":
