@@ -12,31 +12,58 @@ Each layer is wired directly so the responsibility of every dependency is visibl
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph Ingest["Ingestion (offline)"]
-        A[SEC EDGAR] --> B[HTML parser<br/>+ Item-level metadata]
-        B --> C[Semantic chunker<br/>Item-aware, w/ overlap]
-    end
-
-    subgraph Index["Indexing (offline)"]
-        C --> D[Embeddings<br/>BAAI/bge-small-en-v1.5]
-        C --> E[BM25<br/>rank_bm25]
-        D --> F[(Qdrant<br/>+ payload index)]
-    end
-
-    subgraph Serve["Serving (online)"]
-        Q[POST /query] --> H[Hybrid retrieve<br/>dense + BM25 → RRF]
-        F --> H
-        E --> H
-        H --> RR[Cross-encoder<br/>rerank top-20 → top-5]
-        RR --> G[LLM via NVIDIA NIM<br/>citation-enforced prompt]
-        G --> P[Citation parser<br/>drops hallucinated ids]
-        P --> ANS[Answer + validated citations]
-    end
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           INGESTION (offline)                                        │
+│                                                                                     │
+│   SEC EDGAR ──► HTML Parser ──► Semantic Chunker                                    │
+│   (10-K filings,    (Item-level       (Item-aware splits,                           │
+│    last N years)     metadata)         configurable overlap)                         │
+└────────────────────────────────────┬────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           INDEXING (offline)                                         │
+│                                                                                     │
+│              ┌──► Embeddings (BAAI/bge-small-en-v1.5) ──► Qdrant (vector DB)        │
+│   Chunks ───┤                                                                       │
+│              └──► BM25 Tokenizer ──► Sparse Index (rank_bm25, pickled)              │
+│                                                                                     │
+└──────────────────────────┬──────────────────────────────┬───────────────────────────┘
+                           │                              │
+                           ▼                              ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           SERVING (online)                                           │
+│                                                                                     │
+│   POST /query                                                                       │
+│       │                                                                             │
+│       ▼                                                                             │
+│   ┌─────────────────────────────────────────┐                                       │
+│   │  Hybrid Retrieval                       │                                       │
+│   │  Dense (Qdrant) + Sparse (BM25) → RRF  │                                       │
+│   └─────────────────┬───────────────────────┘                                       │
+│                     ▼                                                                │
+│   ┌─────────────────────────────────────────┐                                       │
+│   │  Cross-Encoder Reranker                 │                                       │
+│   │  top-20 → top-5                         │                                       │
+│   └─────────────────┬───────────────────────┘                                       │
+│                     ▼                                                                │
+│   ┌─────────────────────────────────────────┐                                       │
+│   │  LLM Generation (NVIDIA NIM)            │                                       │
+│   │  Citation-enforced prompt               │                                       │
+│   └─────────────────┬───────────────────────┘                                       │
+│                     ▼                                                                │
+│   ┌─────────────────────────────────────────┐                                       │
+│   │  Citation Parser                        │                                       │
+│   │  Validates chunk IDs, drops hallucinated│                                       │
+│   └─────────────────┬───────────────────────┘                                       │
+│                     ▼                                                                │
+│             Answer + Citations ──► React UI                                          │
+│                                                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-ASCII fallback and per-stage data model are in [docs/architecture.md](docs/architecture.md).
+Detailed per-stage data model and sequence diagrams are in [docs/architecture.md](docs/architecture.md).
 
 ---
 
