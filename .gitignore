@@ -27,6 +27,12 @@ venv/
 htmlcov/
 coverage.xml
 
+# --- Frontend ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo
+
 # --- IDE ---
 .vscode/
 .idea/
@@ -39,6 +45,7 @@ data/chunks/**
 !data/chunks/.gitkeep
 data/bm25/**
 !data/bm25/.gitkeep
+data/qdrant_local/**
 
 # Sample filing IS committed (under data/sample/) — do not ignore it.
 

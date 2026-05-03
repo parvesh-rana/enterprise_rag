@@ -8,7 +8,8 @@ PY := uv run python
 ARGS ?=
 
 .PHONY: help install ingest ingest-sample index index-recreate eval eval-fast \
-        serve test test-fast lint fmt typecheck check build up down logs clean
+        serve frontend-install frontend-dev frontend-build test test-fast lint fmt \
+        typecheck check build up down logs clean
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -37,6 +38,15 @@ eval-fast: ## Eval without LLM-as-judge (retrieval metrics only; no LLM cost)
 
 serve: ## Run the FastAPI service locally on $$API_PORT (default 8000)
 	$(PY) -m uvicorn api.main:app --host 0.0.0.0 --port $${API_PORT:-8000} --reload
+
+frontend-install: ## Install React frontend dependencies
+	cd frontend && npm install
+
+frontend-dev: ## Run the React analyst console on Vite
+	cd frontend && npm run dev
+
+frontend-build: ## Typecheck and build the React analyst console
+	cd frontend && npm run build
 
 test: ## Run pytest with coverage on critical modules
 	uv run pytest --cov=api --cov=retrieval --cov=generation --cov-report=term-missing

@@ -20,7 +20,11 @@ log = get_logger(__name__)
 
 
 def _client() -> QdrantClient:
-    return QdrantClient(url=get_settings().qdrant_url, prefer_grpc=False, timeout=30)
+    settings = get_settings()
+    if settings.qdrant_url.startswith("local:"):
+        path = settings.qdrant_url.removeprefix("local:").strip()
+        return QdrantClient(path=str(path if path else settings.data_dir / "qdrant_local"))
+    return QdrantClient(url=settings.qdrant_url, prefer_grpc=False, timeout=30)
 
 
 def _point_id(chunk_id: str) -> str:

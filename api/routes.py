@@ -104,12 +104,21 @@ def health(
 ) -> HealthResponse:
     settings = get_settings()
     qdrant_ok = False
-    try:
-        with httpx.Client(timeout=2.0) as client:
-            r = client.get(f"{settings.qdrant_url}/readyz")
-            qdrant_ok = r.status_code == 200
-    except httpx.HTTPError:
-        qdrant_ok = False
+    if settings.qdrant_url.startswith("local:"):
+        try:
+            from index.vector_store import _client
+
+            collections = _client().get_collections().collections
+            qdrant_ok = any(c.name == settings.qdrant_collection for c in collections)
+        except Exception:
+            qdrant_ok = False
+    else:
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                r = client.get(f"{settings.qdrant_url}/readyz")
+                qdrant_ok = r.status_code == 200
+        except httpx.HTTPError:
+            qdrant_ok = False
 
     bm25_ok = bm25 is not None
     overall: Literal["ok", "degraded"] = "ok" if (qdrant_ok and bm25_ok) else "degraded"
