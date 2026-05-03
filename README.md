@@ -46,29 +46,33 @@ ASCII fallback and per-stage data model are in [docs/architecture.md](docs/archi
 
 ```bash
 cp .env.example .env                          # add NVIDIA_API_KEY
-make install                                  # uv sync
+pip install -e .                              # install dependencies
 docker compose up -d qdrant                   # start the vector store
 python -m ingestion --sample-only             # parse + chunk the bundled filing
-make index                                    # build dense + BM25 indexes
-make serve                                    # FastAPI on :8000
+python -m index --recreate                    # build dense + BM25 indexes
+python -m uvicorn api.main:app --port 8000    # FastAPI on :8000
 ```
 
 Then `curl -X POST localhost:8000/query -H "content-type: application/json" \
 -d '{"question":"What does the company describe as its primary product lines?"}'`.
 
-### Full path (5 real 10-Ks)
+### Full path (multi-year 10-Ks with React UI)
 
 ```bash
-cp .env.example .env                          # add NVIDIA_API_KEY + EDGAR_USER_AGENT
-make install
-make ingest                                   # downloads AAPL, MSFT, AMZN, TSLA, NVDA
+cp .env.example .env                          # add NVIDIA_API_KEY
+pip install -e .
 docker compose up -d qdrant
-make index
-make eval                                     # runs the 40-question harness
-make serve
+python -m ingestion --tickers AAPL MSFT AMZN TSLA NVDA --years 4   # last 4 years
+python -m index --recreate                    # embed + upsert to Qdrant + BM25
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+# In another terminal — start the frontend
+cd frontend && npm install && npm run dev
 ```
 
-`make help` lists every target.
+The React UI will be available at `http://localhost:5173` and proxies API calls to `:8000`.
+
+`make help` lists every Makefile target.
 
 ---
 
@@ -207,6 +211,7 @@ index/        embedding + Qdrant + BM25 build pipeline
 retrieval/    dense, sparse, RRF fusion, metadata filter, cross-encoder rerank
 generation/   LLM client abstraction (NVIDIA NIM, Anthropic, Ollama), prompts
 evaluation/   metrics, LLM-as-judge, hand-written QA set, run reports
+frontend/     Vite + React + TypeScript UI (Tailwind, @tanstack/react-query)
 tests/        pytest: chunker, fusion, BM25, prompts, reranker, eval, API integration
 data/         sample/ (committed), raw/ chunks/ bm25/ (gitignored)
 docs/         architecture.md (sequence diagram, data model, observability)
@@ -216,7 +221,7 @@ docs/         architecture.md (sequence diagram, data model, observability)
 
 ## Reproducibility notes
 
-- Python 3.11 only. `uv` for dep management; `uv.lock` is committed.
+- Python ≥ 3.11. `uv` or `pip install -e .` for dep management; `uv.lock` is committed.
 - Every dependency in [pyproject.toml](pyproject.toml) carries a one-line
   comment justifying its presence.
 - Configuration is read from `.env` via `pydantic-settings`. **No secrets
