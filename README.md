@@ -109,6 +109,34 @@ The React UI will be available at `http://localhost:5173` and proxies API calls 
 
 ---
 
+## Example queries
+
+Once the system is running, try these from the UI or via `curl`:
+
+| Category | Query |
+|----------|-------|
+| **Factoid** | What are Apple's main risk factors? |
+| **Factoid** | What was Nvidia's total revenue in the most recent fiscal year? |
+| **Factoid** | Describe Microsoft's cloud computing segment and its growth. |
+| **Factoid** | What are Tesla's key manufacturing risks? |
+| **Factoid** | How does Amazon describe its competitive landscape? |
+| **Comparative** | How do Apple and Microsoft differ in their approach to AI? |
+| **Comparative** | Compare Nvidia's and AMD's revenue growth strategies. |
+| **Multi-hop** | Which company spends the most on R&D as a percentage of revenue? |
+| **Financial** | What was Tesla's operating income and how did it change year over year? |
+| **Risk** | What supply chain risks does Nvidia disclose? |
+| **Filtered** | What does Apple say about privacy and data protection? |
+| **Abstention** | What is Google's revenue? _(should abstain — not in corpus)_ |
+
+**With filters** (via API):
+```bash
+curl -X POST localhost:8000/query \
+  -H "content-type: application/json" \
+  -d '{"question": "What are the key risk factors?", "company": "NVDA", "year": 2024}'
+```
+
+---
+
 ## Eval results
 
 The eval harness runs against [evaluation/qa_set.jsonl](evaluation/qa_set.jsonl)
