@@ -83,7 +83,7 @@ def main() -> None:
             {
                 "chunks_indexed": len(chunks),
                 "bm25_path": str(bm25_path),
-                "qdrant_collection": settings.qdrant_collection,
+                "chroma_collection": settings.chroma_collection,
             }
         )
     )

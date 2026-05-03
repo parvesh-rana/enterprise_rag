@@ -41,7 +41,7 @@ def ensure_collection(*, recreate: bool = False) -> None:
     if recreate:
         try:
             client.delete_collection(settings.chroma_collection)
-        except ValueError:
+        except Exception:
             pass  # collection didn't exist
     client.get_or_create_collection(
         name=settings.chroma_collection,
