@@ -74,7 +74,7 @@ class Chunk(BaseModel):
 
     @property
     def metadata(self) -> dict[str, str | int]:
-        """Flat metadata payload suitable for Qdrant filtering."""
+        """Flat metadata payload suitable for vector store filtering."""
         return {
             "company": self.company,
             "year": self.year,

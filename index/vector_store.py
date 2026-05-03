@@ -1,4 +1,4 @@
-"""Qdrant wrapper. Owns collection lifecycle and upsert/search APIs."""
+"""ChromaDB wrapper. Owns collection lifecycle and upsert/search APIs."""
 
 from __future__ import annotations
 
@@ -8,9 +8,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
+import chromadb
 import numpy as np
-from qdrant_client import QdrantClient
-from qdrant_client.http import models as qm
 
 from core.config import get_settings
 from core.logging import get_logger
@@ -19,18 +18,13 @@ from core.types import Chunk
 log = get_logger(__name__)
 
 
-def _client() -> QdrantClient:
+def _client() -> chromadb.ClientAPI:
     settings = get_settings()
-    return QdrantClient(
-        url=settings.qdrant_url,
-        api_key=settings.qdrant_api_key,
-        prefer_grpc=False,
-        timeout=30,
-    )
+    return chromadb.PersistentClient(path=settings.chroma_persist_dir)
 
 
 def _point_id(chunk_id: str) -> str:
-    """Qdrant point IDs must be UUID or unsigned int; derive a stable UUIDv5."""
+    """Derive a stable ID string for a chunk."""
     return str(uuid.UUID(hashlib.md5(chunk_id.encode()).hexdigest()))
 
 
@@ -44,29 +38,16 @@ class DenseHit:
 def ensure_collection(*, recreate: bool = False) -> None:
     settings = get_settings()
     client = _client()
-    existing = {c.name for c in client.get_collections().collections}
-    if settings.qdrant_collection in existing and not recreate:
-        return
-    if settings.qdrant_collection in existing and recreate:
-        client.delete_collection(settings.qdrant_collection)
-
-    client.create_collection(
-        collection_name=settings.qdrant_collection,
-        vectors_config=qm.VectorParams(size=settings.embedding_dim, distance=qm.Distance.COSINE),
+    if recreate:
+        try:
+            client.delete_collection(settings.chroma_collection)
+        except ValueError:
+            pass  # collection didn't exist
+    client.get_or_create_collection(
+        name=settings.chroma_collection,
+        metadata={"hnsw:space": "cosine"},
     )
-
-    # Indexes for the metadata fields we filter on.
-    for field, schema in (
-        ("company", qm.PayloadSchemaType.KEYWORD),
-        ("year", qm.PayloadSchemaType.INTEGER),
-        ("item", qm.PayloadSchemaType.KEYWORD),
-    ):
-        client.create_payload_index(
-            collection_name=settings.qdrant_collection,
-            field_name=field,
-            field_schema=schema,
-        )
-    log.info("qdrant.collection_created", name=settings.qdrant_collection)
+    log.info("chroma.collection_ready", name=settings.chroma_collection)
 
 
 def upsert_chunks(chunks: Sequence[Chunk], vectors: np.ndarray, batch_size: int = 256) -> int:
@@ -74,54 +55,82 @@ def upsert_chunks(chunks: Sequence[Chunk], vectors: np.ndarray, batch_size: int 
         raise ValueError("chunks and vectors length mismatch")
     settings = get_settings()
     client = _client()
+    collection = client.get_or_create_collection(
+        name=settings.chroma_collection,
+        metadata={"hnsw:space": "cosine"},
+    )
 
     total = 0
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i : i + batch_size]
         vecs = vectors[i : i + batch_size]
-        points = [
-            qm.PointStruct(
-                id=_point_id(c.id),
-                vector=vec.tolist(),
-                payload={
-                    "chunk_id": c.id,
-                    "company": c.company,
-                    "company_name": c.company_name,
-                    "year": c.year,
-                    "item": c.item,
-                    "section_title": c.section_title,
-                    "text": c.text,
-                    "source_url": c.source_url,
-                },
-            )
-            for c, vec in zip(batch, vecs, strict=True)
+        ids = [_point_id(c.id) for c in batch]
+        embeddings = vecs.tolist()
+        documents = [c.text for c in batch]
+        metadatas = [
+            {
+                "chunk_id": c.id,
+                "company": c.company,
+                "company_name": c.company_name,
+                "year": c.year,
+                "item": c.item,
+                "section_title": c.section_title,
+                "source_url": c.source_url,
+            }
+            for c in batch
         ]
-        client.upsert(collection_name=settings.qdrant_collection, points=points, wait=True)
-        total += len(points)
-    log.info("qdrant.upsert", count=total)
+        collection.upsert(ids=ids, embeddings=embeddings, documents=documents, metadatas=metadatas)
+        total += len(batch)
+    log.info("chroma.upsert", count=total)
     return total
 
 
 def search(
-    *, query_vector: np.ndarray, top_k: int, qdrant_filter: qm.Filter | None = None
+    *, query_vector: np.ndarray, top_k: int, where: dict[str, Any] | None = None
 ) -> list[DenseHit]:
-    client = _client()
     settings = get_settings()
-    # `query_points` is the supported API in qdrant-client >=1.10. The older
-    # `client.search(...)` method was removed.
-    res = client.query_points(
-        collection_name=settings.qdrant_collection,
-        query=query_vector.tolist(),
-        limit=top_k,
-        query_filter=qdrant_filter,
-        with_payload=True,
+    client = _client()
+    collection = client.get_or_create_collection(
+        name=settings.chroma_collection,
+        metadata={"hnsw:space": "cosine"},
     )
-    return [
-        DenseHit(
-            chunk_id=p.payload["chunk_id"],
-            score=float(p.score),
-            payload=dict(p.payload),
-        )
-        for p in res.points
-        if p.payload is not None
-    ]
+
+    kwargs: dict[str, Any] = {
+        "query_embeddings": [query_vector.tolist()],
+        "n_results": top_k,
+        "include": ["metadatas", "documents", "distances"],
+    }
+    if where:
+        kwargs["where"] = where
+
+    results = collection.query(**kwargs)
+
+    hits: list[DenseHit] = []
+    if results["ids"] and results["ids"][0]:
+        for idx, _id in enumerate(results["ids"][0]):
+            meta = results["metadatas"][0][idx] if results["metadatas"] else {}
+            doc = results["documents"][0][idx] if results["documents"] else ""
+            distance = results["distances"][0][idx] if results["distances"] else 0.0
+            # ChromaDB returns distance (lower = better for cosine); convert to similarity
+            score = 1.0 - distance
+            payload = dict(meta)
+            payload["text"] = doc
+            hits.append(
+                DenseHit(
+                    chunk_id=meta.get("chunk_id", ""),
+                    score=score,
+                    payload=payload,
+                )
+            )
+    return hits
+
+
+def collection_count() -> int:
+    """Return the number of documents in the collection, or 0 if not ready."""
+    try:
+        settings = get_settings()
+        client = _client()
+        collection = client.get_collection(name=settings.chroma_collection)
+        return collection.count()
+    except Exception:
+        return 0

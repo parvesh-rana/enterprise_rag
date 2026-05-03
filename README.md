@@ -25,7 +25,7 @@ Each layer is wired directly so the responsibility of every dependency is visibl
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                           INDEXING (offline)                                         │
 │                                                                                     │
-│              ┌──► Embeddings (BAAI/bge-small-en-v1.5) ──► Qdrant (vector DB)        │
+│              ┌──► Embeddings (BAAI/bge-small-en-v1.5) ──► ChromaDB (embedded)         │
 │   Chunks ───┤                                                                       │
 │              └──► BM25 Tokenizer ──► Sparse Index (rank_bm25, pickled)              │
 │                                                                                     │
@@ -40,7 +40,7 @@ Each layer is wired directly so the responsibility of every dependency is visibl
 │       ▼                                                                             │
 │   ┌─────────────────────────────────────────┐                                       │
 │   │  Hybrid Retrieval                       │                                       │
-│   │  Dense (Qdrant) + Sparse (BM25) → RRF  │                                       │
+│   │  Dense (ChromaDB) + Sparse (BM25) → RRF │                                       │
 │   └─────────────────┬───────────────────────┘                                       │
 │                     ▼                                                                │
 │   ┌─────────────────────────────────────────┐                                       │
@@ -71,15 +71,9 @@ Detailed per-stage data model and sequence diagrams are in [docs/architecture.md
 
 ### Prerequisites
 
-**Qdrant** (vector database) — pick one:
-
-| Option | Setup |
-|--------|-------|
-| **Qdrant Cloud** (easiest, no install) | Create a free cluster at [cloud.qdrant.io](https://cloud.qdrant.io), then set in `.env`:<br/>`QDRANT_URL=https://your-cluster.cloud.qdrant.io:6333`<br/>`QDRANT_API_KEY=your-api-key` |
-| **Docker** | `docker compose up -d qdrant` |
-| **Standalone binary** (no Docker) | Download from [github.com/qdrant/qdrant/releases](https://github.com/qdrant/qdrant/releases), then run:<br/>`./qdrant` (Linux/macOS) or `.\qdrant.exe` (Windows) |
-
-Qdrant must be reachable at the URL configured in `.env` before indexing or serving.
+- **Python ≥ 3.11**
+- **Node.js ≥ 18** (for the React frontend)
+- No external database needed — **ChromaDB runs embedded** (data persisted to `data/chroma/`)
 
 ---
 
@@ -88,7 +82,6 @@ Qdrant must be reachable at the URL configured in `.env` before indexing or serv
 ```bash
 cp .env.example .env                          # add NVIDIA_API_KEY
 pip install -e .                              # install dependencies
-# Start Qdrant (Docker OR binary — see above)
 python -m ingestion --sample-only             # parse + chunk the bundled filing
 python -m index --recreate                    # build dense + BM25 indexes
 python -m uvicorn api.main:app --port 8000    # FastAPI on :8000
@@ -102,9 +95,8 @@ Then `curl -X POST localhost:8000/query -H "content-type: application/json" \
 ```bash
 cp .env.example .env                          # add NVIDIA_API_KEY
 pip install -e .
-# Start Qdrant (Docker OR binary — see above)
 python -m ingestion --tickers AAPL MSFT AMZN TSLA NVDA --years 4   # last 4 years
-python -m index --recreate                    # embed + upsert to Qdrant + BM25
+python -m index --recreate                    # embed + store in ChromaDB + BM25
 python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
 # In another terminal — start the frontend
@@ -221,9 +213,9 @@ and grade groundedness only.
 ## What I would do next
 
 1. **Multi-vector / late-interaction retrieval (ColBERT-style)** for
-   numerically dense passages where token-level matching matters. The
-   payload-shape fits Qdrant's multi-vector mode without an architectural
-   change.
+   numerically dense passages where token-level matching matters. ChromaDB
+   supports multiple embedding functions which could enable this without an
+   architectural change.
 2. **Query rewriting and decomposition** for multi-hop questions like
    "compare Tesla's and Nvidia's R&D spend over the last two years". Today
    the retriever sees the original question; a rewriter could split it into
@@ -248,7 +240,7 @@ and grade groundedness only.
 api/          FastAPI service, routes, schemas, middleware, metrics
 core/         shared config (pydantic-settings), logging (structlog), types
 ingestion/    SEC EDGAR downloader, HTML→text, Item-aware semantic chunker
-index/        embedding + Qdrant + BM25 build pipeline
+index/        embedding + ChromaDB + BM25 build pipeline
 retrieval/    dense, sparse, RRF fusion, metadata filter, cross-encoder rerank
 generation/   LLM client abstraction (NVIDIA NIM, Anthropic, Ollama), prompts
 evaluation/   metrics, LLM-as-judge, hand-written QA set, run reports

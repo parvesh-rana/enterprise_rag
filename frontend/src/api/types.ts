@@ -34,7 +34,7 @@ export interface QueryResponse {
 
 export interface HealthResponse {
   status: "ok" | "degraded";
-  qdrant: boolean;
+  vector_store: boolean;
   bm25: boolean;
   llm_provider: string;
   embedding_model: string;

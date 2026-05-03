@@ -1,7 +1,7 @@
 """Metadata pre-filters shared by dense and sparse retrievers.
 
 A `RetrievalFilter` is provider-agnostic; each retriever translates it into
-its native form (Qdrant `Filter` for dense, a Python predicate for BM25).
+its native form (ChromaDB `where` dict for dense, a Python predicate for BM25).
 """
 
 from __future__ import annotations
@@ -10,7 +10,6 @@ from collections.abc import Callable
 from typing import Any
 
 from pydantic import BaseModel, Field
-from qdrant_client.http import models as qm
 
 
 class RetrievalFilter(BaseModel):
@@ -23,19 +22,20 @@ class RetrievalFilter(BaseModel):
     def is_empty(self) -> bool:
         return self.company is None and self.year is None and self.item is None
 
-    def to_qdrant(self) -> qm.Filter | None:
+    def to_chroma_where(self) -> dict[str, Any] | None:
+        """Build a ChromaDB `where` filter dict, or None if no constraints."""
         if self.is_empty():
             return None
-        # Qdrant's `must` accepts a wider union than FieldCondition; type via Any
-        # so we don't fight list invariance.
-        must: list[Any] = []
+        conditions: list[dict[str, Any]] = []
         if self.company is not None:
-            must.append(qm.FieldCondition(key="company", match=qm.MatchValue(value=self.company)))
+            conditions.append({"company": {"$eq": self.company}})
         if self.year is not None:
-            must.append(qm.FieldCondition(key="year", match=qm.MatchValue(value=self.year)))
+            conditions.append({"year": {"$eq": self.year}})
         if self.item is not None:
-            must.append(qm.FieldCondition(key="item", match=qm.MatchValue(value=self.item)))
-        return qm.Filter(must=must)
+            conditions.append({"item": {"$eq": self.item}})
+        if len(conditions) == 1:
+            return conditions[0]
+        return {"$and": conditions}
 
     def to_predicate(self) -> Callable[[dict[str, Any]], bool]:
         if self.is_empty():

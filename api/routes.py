@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from typing import Literal
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from api import metrics
@@ -103,19 +102,15 @@ def health(
     bm25: BM25Index | None = Depends(get_bm25),
 ) -> HealthResponse:
     settings = get_settings()
-    qdrant_ok = False
-    try:
-        with httpx.Client(timeout=2.0) as client:
-            r = client.get(f"{settings.qdrant_url}/readyz")
-            qdrant_ok = r.status_code == 200
-    except httpx.HTTPError:
-        qdrant_ok = False
+    from index.vector_store import collection_count
+
+    chroma_ok = collection_count() > 0
 
     bm25_ok = bm25 is not None
-    overall: Literal["ok", "degraded"] = "ok" if (qdrant_ok and bm25_ok) else "degraded"
+    overall: Literal["ok", "degraded"] = "ok" if (chroma_ok and bm25_ok) else "degraded"
     return HealthResponse(
         status=overall,
-        qdrant=qdrant_ok,
+        vector_store=chroma_ok,
         bm25=bm25_ok,
         llm_provider=settings.llm_provider,
         embedding_model=settings.embedding_model,
@@ -127,7 +122,7 @@ def source(
     chunk_id: str, request: Request, bm25: BM25Index | None = Depends(get_bm25)
 ) -> SourceResponse:
     """Return the full text of a chunk by id. BM25 carries the full payload
-    so we read from it rather than going back to Qdrant."""
+    so we read from it rather than going back to the vector store."""
     if bm25 is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

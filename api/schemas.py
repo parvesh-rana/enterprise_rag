@@ -40,7 +40,7 @@ class QueryResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: Literal["ok", "degraded"]
-    qdrant: bool
+    vector_store: bool
     bm25: bool
     llm_provider: str
     embedding_model: str

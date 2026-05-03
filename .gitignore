@@ -48,9 +48,12 @@ evaluation/runs/*.md
 evaluation/runs/*.json
 !evaluation/runs/.gitkeep
 
-# --- Qdrant local volume (if mounted outside compose) ---
-qdrant_storage/
+# --- ChromaDB local data ---
+data/chroma/
+
+# --- Qdrant local binary/storage (legacy) ---
 qdrant_bin/
+qdrant_storage/
 
 # --- OS ---
 .DS_Store

@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Parvesh Rana" }]
-keywords = ["rag", "retrieval", "llm", "qdrant", "bm25", "sec", "10-k"]
+keywords = ["rag", "retrieval", "llm", "chromadb", "bm25", "sec", "10-k"]
 
 # Each dependency carries a one-line justification per the brief.
 dependencies = [
@@ -23,7 +23,7 @@ dependencies = [
   "selectolax>=0.3",            # fast HTML parsing without lxml C-deps
   # --- Indexing & retrieval ---
   "sentence-transformers>=3.3", # bi-encoder + cross-encoder loaders
-  "qdrant-client>=1.12",        # vector store SDK; server runs in compose
+  "chromadb>=0.5",              # embedded vector store, no server needed
   "rank-bm25>=0.2",             # in-process sparse index over same chunks
   # --- Generation ---
   "openai>=1.55",               # OpenAI-compatible client; reused for NVIDIA NIM + Ollama via base_url
@@ -94,7 +94,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = [
   "rank_bm25.*",
-  "qdrant_client.*",
+  "chromadb.*",
   "sentence_transformers.*",
   "selectolax.*",
   "prometheus_client.*",

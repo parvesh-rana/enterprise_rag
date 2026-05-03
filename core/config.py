@@ -43,10 +43,9 @@ class Settings(BaseSettings):
     rerank_top_k: int = 20
     final_top_k: int = 5
 
-    # --- Qdrant ---
-    qdrant_url: str = "http://localhost:6333"
-    qdrant_api_key: str | None = None
-    qdrant_collection: str = "filings_v1"
+    # --- ChromaDB ---
+    chroma_persist_dir: str = "data/chroma"
+    chroma_collection: str = "filings_v1"
 
     # --- SEC EDGAR ---
     edgar_user_agent: str = Field(
