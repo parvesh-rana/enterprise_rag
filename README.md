@@ -69,12 +69,25 @@ Detailed per-stage data model and sequence diagrams are in [docs/architecture.md
 
 ## How to run
 
+### Prerequisites
+
+**Qdrant** (vector database) — pick one:
+
+| Option | Command |
+|--------|---------|
+| **Docker** (recommended) | `docker compose up -d qdrant` |
+| **Standalone binary** (no Docker needed) | Download from [github.com/qdrant/qdrant/releases](https://github.com/qdrant/qdrant/releases), then run:<br/>`./qdrant` (Linux/macOS) or `.\qdrant.exe` (Windows) |
+
+Qdrant must be running on `localhost:6333` before indexing or serving.
+
+---
+
 ### 5-minute path (sample corpus, no SEC access required)
 
 ```bash
 cp .env.example .env                          # add NVIDIA_API_KEY
 pip install -e .                              # install dependencies
-docker compose up -d qdrant                   # start the vector store
+# Start Qdrant (Docker OR binary — see above)
 python -m ingestion --sample-only             # parse + chunk the bundled filing
 python -m index --recreate                    # build dense + BM25 indexes
 python -m uvicorn api.main:app --port 8000    # FastAPI on :8000
@@ -88,7 +101,7 @@ Then `curl -X POST localhost:8000/query -H "content-type: application/json" \
 ```bash
 cp .env.example .env                          # add NVIDIA_API_KEY
 pip install -e .
-docker compose up -d qdrant
+# Start Qdrant (Docker OR binary — see above)
 python -m ingestion --tickers AAPL MSFT AMZN TSLA NVDA --years 4   # last 4 years
 python -m index --recreate                    # embed + upsert to Qdrant + BM25
 python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
