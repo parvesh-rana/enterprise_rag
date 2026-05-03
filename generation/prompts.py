@@ -34,6 +34,8 @@ context passages provided. Follow these rules without exception:
 4. Be concise. 2-5 sentences for most questions; a short bulleted list for
    comparisons. No preamble, no restating the question.
 5. Quote sparingly; paraphrase. When you do quote, keep it under ~15 words.
+6. Use plain text only. Do NOT use markdown formatting such as bold (**),
+   headers (#), or italics (*). Citations in brackets are the only special syntax.
 """
 
 _CONTEXT_HEADER = (
