@@ -73,12 +73,13 @@ Detailed per-stage data model and sequence diagrams are in [docs/architecture.md
 
 **Qdrant** (vector database) — pick one:
 
-| Option | Command |
-|--------|---------|
-| **Docker** (recommended) | `docker compose up -d qdrant` |
-| **Standalone binary** (no Docker needed) | Download from [github.com/qdrant/qdrant/releases](https://github.com/qdrant/qdrant/releases), then run:<br/>`./qdrant` (Linux/macOS) or `.\qdrant.exe` (Windows) |
+| Option | Setup |
+|--------|-------|
+| **Qdrant Cloud** (easiest, no install) | Create a free cluster at [cloud.qdrant.io](https://cloud.qdrant.io), then set in `.env`:<br/>`QDRANT_URL=https://your-cluster.cloud.qdrant.io:6333`<br/>`QDRANT_API_KEY=your-api-key` |
+| **Docker** | `docker compose up -d qdrant` |
+| **Standalone binary** (no Docker) | Download from [github.com/qdrant/qdrant/releases](https://github.com/qdrant/qdrant/releases), then run:<br/>`./qdrant` (Linux/macOS) or `.\qdrant.exe` (Windows) |
 
-Qdrant must be running on `localhost:6333` before indexing or serving.
+Qdrant must be reachable at the URL configured in `.env` before indexing or serving.
 
 ---
 

@@ -20,7 +20,13 @@ log = get_logger(__name__)
 
 
 def _client() -> QdrantClient:
-    return QdrantClient(url=get_settings().qdrant_url, prefer_grpc=False, timeout=30)
+    settings = get_settings()
+    return QdrantClient(
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key,
+        prefer_grpc=False,
+        timeout=30,
+    )
 
 
 def _point_id(chunk_id: str) -> str:
