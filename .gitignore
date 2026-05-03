@@ -1,0 +1,57 @@
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+# Contains an NVIDIA API key from a copy-pasted reference; never commit.
+view_code.txt
+
+# --- Local agent / IDE state ---
+.claude/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# --- Tooling caches ---
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+
+# --- Data: never commit raw filings or built indexes ---
+data/raw/**
+!data/raw/.gitkeep
+data/chunks/**
+!data/chunks/.gitkeep
+data/bm25/**
+!data/bm25/.gitkeep
+
+# Sample filing IS committed (under data/sample/) — do not ignore it.
+
+# --- Eval run outputs ---
+evaluation/runs/*.csv
+evaluation/runs/*.md
+evaluation/runs/*.json
+!evaluation/runs/.gitkeep
+
+# --- Qdrant local volume (if mounted outside compose) ---
+qdrant_storage/
+qdrant_bin/
+
+# --- OS ---
+.DS_Store
+Thumbs.db

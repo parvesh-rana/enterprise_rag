@@ -1,0 +1,115 @@
+[project]
+name = "enterprise-rag"
+version = "0.1.0"
+description = "Production-shaped RAG over SEC 10-K filings: hybrid retrieval, reranking, grounded citations, eval harness."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Parvesh Rana" }]
+keywords = ["rag", "retrieval", "llm", "qdrant", "bm25", "sec", "10-k"]
+
+# Each dependency carries a one-line justification per the brief.
+dependencies = [
+  # --- API layer ---
+  "fastapi>=0.115",             # async HTTP service; Pydantic v2 native
+  "uvicorn[standard]>=0.32",    # ASGI server with httptools/uvloop/websockets
+  "pydantic>=2.9",              # request/response models, runtime validation
+  "pydantic-settings>=2.6",     # 12-factor .env config; never hardcode keys
+  # --- Observability ---
+  "structlog>=24.4",            # JSON logs with request_id propagation
+  "prometheus-client>=0.21",    # /metrics: counters, histograms
+  # --- Ingestion ---
+  "httpx>=0.27",                # async HTTP client for SEC EDGAR
+  "selectolax>=0.3",            # fast HTML parsing without lxml C-deps
+  # --- Indexing & retrieval ---
+  "sentence-transformers>=3.3", # bi-encoder + cross-encoder loaders
+  "qdrant-client>=1.12",        # vector store SDK; server runs in compose
+  "rank-bm25>=0.2",             # in-process sparse index over same chunks
+  # --- Generation ---
+  "openai>=1.55",               # OpenAI-compatible client; reused for NVIDIA NIM + Ollama via base_url
+  "anthropic>=0.40",            # alternate provider; demonstrates the abstraction
+  # --- Resilience & utilities ---
+  "tenacity>=9.0",              # retry/backoff for EDGAR + LLM calls
+  "tqdm>=4.66",                 # CLI progress for ingestion + indexing
+  "orjson>=3.10",               # fast JSON encode for logs and chunk IO
+  "numpy>=2.1",                 # vectorized eval metrics
+]
+
+[project.urls]
+Repository = "https://github.com/parvesh-rana/enterprise_rag"
+Issues = "https://github.com/parvesh-rana/enterprise_rag/issues"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+  "black>=24.10",
+  "mypy>=1.13",
+  "pre-commit>=4.0",
+  "types-tqdm",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["api", "core", "ingestion", "index", "retrieval", "generation", "evaluation"]
+
+# ---- Tooling ----
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF", "ANN", "ASYNC"]
+# E501: line length is governed by black.
+# ANN401: we deliberately use `Any` in a couple of lazy-load wrappers and in
+# structlog's **initial_values; the alternative (importing torch/sentence-
+# transformers at module scope) defeats the lazy load.
+ignore = ["E501", "ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "B"]
+# B008 fires on FastAPI's standard `param: T = Depends(provider)` idiom.
+"api/*" = ["B008"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["api.*", "retrieval.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+  "rank_bm25.*",
+  "qdrant_client.*",
+  "sentence_transformers.*",
+  "selectolax.*",
+  "prometheus_client.*",
+]
+ignore_missing_imports = true
+
+# Loose checks on ingestion/index/evaluation/generation: they touch lots of
+# untyped third-party libs and CLI scaffolding; the strict frontier is the
+# part of the system reviewers actually call into (api + retrieval).
+[[tool.mypy.overrides]]
+module = ["ingestion.*", "index.*", "evaluation.*", "generation.providers.*"]
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"

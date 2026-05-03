@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=15000"]   # allow the committed sample 10-K HTML
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+
+  # mypy runs through the project's uv venv so all transitive deps and the
+  # pyproject.toml [tool.mypy] overrides apply consistently with CI. This is
+  # slower than the upstream mirrors-mypy hook but avoids drift.
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict on api + retrieval)
+        entry: uv run mypy api retrieval generation core
+        language: system
+        types: [python]
+        pass_filenames: false
